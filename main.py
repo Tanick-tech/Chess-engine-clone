@@ -19,7 +19,7 @@ def main():
     clock = p.time.Clock()
     screen.fill(p.Color('white'))
     gs = engine.GameState()   # create game state
-    font = p.font.SysFont("DejaVu Sans", settings.SQ_SIZE)               # load your Unicode chess icons
+    loadImages()
     running = True
     sqSelected =() #No squares is selected, keep track of the last click of the user (tuple: (row, col))
     playerClicks = [] #Keep track of the player clicks
@@ -31,18 +31,17 @@ def main():
                 location = p.mouse.get_pos() #(x,y) location of the mouse
                 col = location[0]//settings.SQ_SIZE # 0 means the x variable of location
                 row = location[1]//settings.SQ_SIZE # 1 means the y variable of location
-                if sqSelected == (col, row): #The user clicked the same square --> this is the undo step
+                if sqSelected == (row, col): #The user clicked the same square --> this is the undo step
                     sqSelected = () #De-select
                     playerClicks = [] #Clear player clicks
                 else:
-                    sqSelected = (col, row)
+                    sqSelected = (row, col)
                     playerClicks.append(sqSelected) #Append for both 1st and 2nd clicks
                 if len(playerClicks) == 2: #after 2nd click
                     move = engine.Move(playerClicks[0], playerClicks[1], gs.board)
                     gs.makeMove(move)
                     sqSelected = () #Reset user clicks
                     playerClicks = []
-        loadImages()
         drawGameState(screen, gs)   # <-- draw board + pieces here
         clock.tick(settings.MAX_FPS)
         p.display.flip()
