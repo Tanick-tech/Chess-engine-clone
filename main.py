@@ -7,21 +7,42 @@ import settings
 Initialize a global dictionary of images. This will be called exactly once in the main
 '''
 
+def loadImages():
+    pieces = ['wp', 'wR', 'wN', 'wB', 'wK', 'wQ', 'bp', 'bR', 'bN', 'bB', 'bK', 'bQ']
+    for piece in pieces:
+       settings.IMAGES[piece] = p.transform.scale(p.image.load("image/" + piece + ".png"), (settings.SQ_SIZE, settings.SQ_SIZE))
 
 #The main driver for our code. This will handle user imput and updating the graphics
 def main():
     p.init()
     screen = p.display.set_mode((settings.WIDTH, settings.HEIGHT))
     clock = p.time.Clock()
+    screen.fill(p.Color('white'))
     gs = engine.GameState()   # create game state
     font = p.font.SysFont("DejaVu Sans", settings.SQ_SIZE)               # load your Unicode chess icons
-
     running = True
+    sqSelected =() #No squares is selected, keep track of the last click of the user (tuple: (row, col))
+    playerClicks = [] #Keep track of the player clicks
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
-
+            elif e.type == p.MOUSEBUTTONDOWN:
+                location = p.mouse.get_pos() #(x,y) location of the mouse
+                col = location[0]//settings.SQ_SIZE # 0 means the x variable of location
+                row = location[1]//settings.SQ_SIZE # 1 means the y variable of location
+                if sqSelected == (col, row): #The user clicked the same square --> this is the undo step
+                    sqSelected = () #De-select
+                    playerClicks = [] #Clear player clicks
+                else:
+                    sqSelected = (col, row)
+                    playerClicks.append(sqSelected) #Append for both 1st and 2nd clicks
+                if len(playerClicks) == 2: #after 2nd click
+                    move = engine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    gs.makeMove(move)
+                    sqSelected = () #Reset user clicks
+                    playerClicks = []
+        loadImages()
         drawGameState(screen, gs)   # <-- draw board + pieces here
         clock.tick(settings.MAX_FPS)
         p.display.flip()
@@ -45,19 +66,12 @@ def drawBoard(screen):
 
 # Draw the pieces on the board using the current GameState.board
 def drawPieces(screen, board):
-    font = p.font.SysFont("Segoe UI Symbol", settings.SQ_SIZE)
     for r in range(settings.DIMENSION):
-        for c in range(settings.DIMENSION):
+        for c in range (settings.DIMENSION):
             piece = board[r][c]
-            if piece != "--":
-                symbol = settings.pieces.get(piece)
-                if symbol:
-                    text_surface = font.render(symbol, True, (0,0,0))
-                    text_rect = text_surface.get_rect(center=(
-                        c*settings.SQ_SIZE + settings.SQ_SIZE//2,
-                        r*settings.SQ_SIZE + settings.SQ_SIZE//2
-                    ))
-                    screen.blit(text_surface, text_rect)
+            if piece != "--": #Not an empty square
+                screen.blit(settings.IMAGES[piece], p.Rect(c*settings.SQ_SIZE, r*settings.SQ_SIZE, settings.SQ_SIZE, settings.SQ_SIZE))
+
 
 
 
