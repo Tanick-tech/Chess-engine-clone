@@ -18,15 +18,19 @@ def main():
     screen = p.display.set_mode((settings.WIDTH, settings.HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color('white'))
-    gs = engine.GameState()   # create game state
+    gs = engine.GameState() # create game state
+    validMoves = gs.getValidMove()
+    moveMade = False #Glad variable for when a move is made
     loadImages()
     running = True
     sqSelected =() #No squares is selected, keep track of the last click of the user (tuple: (row, col))
     playerClicks = [] #Keep track of the player clicks
+
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
+            #Mouse handler
             elif e.type == p.MOUSEBUTTONDOWN:
                 location = p.mouse.get_pos() #(x,y) location of the mouse
                 col = location[0]//settings.SQ_SIZE # 0 means the x variable of location
@@ -39,12 +43,23 @@ def main():
                     playerClicks.append(sqSelected) #Append for both 1st and 2nd clicks
                 if len(playerClicks) == 2: #after 2nd click
                     move = engine.Move(playerClicks[0], playerClicks[1], gs.board)
-                    gs.makeMove(move)
+                    if move in validMoves:
+                        gs.makeMove(move)
+                        moveMade = True
                     sqSelected = () #Reset user clicks
                     playerClicks = []
+            #Undo-the-move code block
+            elif e.type == p.KEYDOWN:
+                if e.key == p.K_z: #Undo when z is pressed
+                    gs.undoMove()
+                    moveMade = True
+        if moveMade:
+            validMoves = gs.getValidMove()
+            moveMade = False
         drawGameState(screen, gs)   # <-- draw board + pieces here
         clock.tick(settings.MAX_FPS)
         p.display.flip()
+
 
 #Responsible for all the graphics within a current game state.
 def drawGameState(screen,gs):
