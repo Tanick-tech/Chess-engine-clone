@@ -12,7 +12,7 @@ def loadImages():
     for piece in pieces:
        settings.IMAGES[piece] = p.transform.scale(p.image.load("image/" + piece + ".png"), (settings.SQ_SIZE, settings.SQ_SIZE))
 
-#The main driver for our code. This will handle user imput and updating the graphics
+#The main driver for our code. This will handle user input and updating the graphics
 def main():
     p.init()
     screen = p.display.set_mode((settings.WIDTH, settings.HEIGHT))
@@ -49,7 +49,12 @@ def main():
                         sqSelected = () #Reset user clicks
                         playerClicks = []
                     else:
-                        playerCLicks = [sqSelected]
+                        playerClicks = [sqSelected]
+                    '''
+                    The reason why the sqSelected, playerClicks are 'tabbed' and another 'else' code block in is because to save the clicks
+                    For instance: if we press on the queen and press on the block that is invalid a move --> just waste a click
+                    Without tabbing in will affect the coordination libraries we are running behind.
+                    '''
             #Undo-the-move code block
             elif e.type == p.KEYDOWN:
                 if e.key == p.K_z: #Undo when z is pressed

@@ -11,16 +11,15 @@ class GameState():
             ['--', '--', '--', '--', '--', '--', '--', '--'],
             ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
             ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']]
-        self.moveFunctions = {'p': self.getPawnMoves,
-                              'R': self.getRookMoves,
-                              'N': self.getKnightMoves,
-                              'B': self.getBishopMoves,
-                              'Q': self.getQueenMoves,
-                              'K': self.getKingMoves} #Creating a dictionary for the moves
-
-
+        self.moveFunctions = {'p': self.getPawnMoves, 'R': self.getRookMoves,
+                              'N': self.getKnightMoves, 'B': self.getBishopMoves,
+                              'Q': self.getQueenMoves, 'K': self.getKingMoves} #Creating a dictionary for the moves
         self.whiteToMove = True
         self.movelog = []
+        self.whiteKingLocation = (7,4)
+        self.blackKingLocation = (0,4)
+        self.checkMate = False
+        self.staleMate = False
 
 #This def will not work for castling, pawn promotion and en passant
     def makeMove(self, move):
@@ -28,6 +27,11 @@ class GameState():
         self.board[move.endRow][move.endCol] = move.pieceMoved
         self.movelog.append(move) #Log the move so we can undo it later
         self.whiteToMove = not self.whiteToMove #Swap players
+        #Update the king's location if moved
+        if move.pieceMoved == 'wK':
+            self.whiteKingLocation = (move.endRow,move.endCol)
+        elif move.pieceMoved == 'bK':
+            self.blackKingLocation = (move.endRow,move.endCol)
 
     #Undo the last move made
     def undoMove(self):
@@ -36,10 +40,65 @@ class GameState():
             self.board[move.startRow][move.startCol] = move.pieceMoved
             self.board[move.endRow][move.endCol] = move.pieceCaptured
             self.whiteToMove = not self.whiteToMove #Switch turns back
+            # Update the king's location if undo
+            if move.pieceMoved == 'wK':
+                self.whiteKingLocation = (move.startRow, move.startCol)
+            elif move.pieceMoved == 'bK':
+                self.blackKingLocation = (move.startRow, move.startCol)
 
     #All moves considering checks
     def getValidMove(self):
-        return self.getAllPossibleMoves() #For now we will not worry about checks
+        # The algorithm:
+        # 1) Generate all the possible moves
+        moves = self.getAllPossibleMoves()
+        # 2) For each move, make the move
+        for i in range (len(moves) - 1, -1, -1): #When removing from a list go backwards through that list
+            self.makeMove(moves[i])
+            # 3) Generate all opponent's moves
+            # 4) For each of your opponent's moves, see if they attack your king
+            self.whiteToMove = not self.whiteToMove
+            if self.inCheck():
+                moves.remove(moves[i]) # 5) If they do attack your king, not a valid move
+            self.whiteToMove = not self.whiteToMove
+            self.undoMove()
+        if len(moves) == 0: #Either checkmate or statemate
+            if self.inCheck():
+                self.checkMate = True
+            else:
+                self.staleMate = True
+        else:
+            self.checkMate = False
+            self.staleMate = False
+        # 5) If they do attack your king, not a valid move
+        return moves
+    '''
+            We need to delete the element of the list backward.
+            Reason: For example:
+            nums = [0, 1, 2, 3, 3, 4, 5]
+            for num in  nums:
+                if num == 3:
+                    nums.remove(num)
+            Then this code will run to the first 3 in the 'nums' list and delete that 3 --> nums = [0, 1, 2, 3, 4, 5]
+            But the num is showing the indexing number of that list (which is at the 3rd position, which is now the 2nd 3)
+            Then it will jump to the 4th position in the new list (which is number 4 in 'nums') --> skip the remaining 3 --> BUG 
+            '''
+
+    #Determine if the current player is in check
+    def inCheck (self):
+        if self.whiteToMove:
+            return self.squareUnderAttack(self.whiteKingLocation[0], self.whiteKingLocation[1])
+        else:
+            return self.squareUnderAttack(self.blackKingLocation[0], self.blackKingLocation[1])
+
+    # Determine if the enemy can attack the square r, c (means the king's position)
+    def squareUnderAttack (self,r,c):
+        self.whiteToMove = not self.whiteToMove #Switch to opponent's turn
+        oopMoves = self.getAllPossibleMoves()
+        self.whiteToMove = not self.whiteToMove #Switch turns black
+        for move in oopMoves:
+            if move.endRow == r and move.endCol == c: #Square is under attack
+                return True
+        return False
 
 
     #All moves without considering checks:
@@ -56,7 +115,7 @@ class GameState():
     # Get all the pawn moves for the pawn located ar row, col and add these moves to the list
     def getPawnMoves(self, r, c, moves):
         if self.whiteToMove: #White pawn moves
-            if self.board[r-1][c] == '--': #1 square on advance
+            if r-1 >= 0 and self.board[r-1][c] == '--': #1 square on advance
                 moves.append(Move((r, c), (r-1,c), self.board))
                 if r == 6 and self.board[r-2][c] == '--': #2 square pawn advance
                     moves.append(Move((r, c), (r-2, c), self.board))
@@ -64,7 +123,7 @@ class GameState():
             if c - 1 >= 0:
                 if self.board[r-1][c-1][0] == 'b': #There is an enemy piece to capture
                     moves.append(Move((r, c), (r-1, c-1), self.board))
-            if c + 1 < 7:
+            if c + 1 <= 7:
                 if self.board[r-1][c+1][0] == 'b':
                     moves.append(Move((r, c), (r-1, c+1), self.board))
 
@@ -84,9 +143,19 @@ class GameState():
 
 
     def getRookMoves(self, r, c, moves):
-        directions = ((-1,0), (1,0), (0,-1), (0,1))
+        directions = ((-1,0), (1,0), (0,-1), (0,1)) #Up, left, down, right
+        '''
+        The reason in directions we have 0 is that when we don't click on that piece, it will not move (since 0 * n = 0)
+        '''
         enemyColor = 'b' if self.whiteToMove else 'w'
-        for d in directions:
+        '''
+        It is equivalent to the 4 following lines of codes
+        if self.whiteToMove:
+            enemyColor = 'b'
+        else:
+            enemyColor = 'w'
+        '''
+        for d in directions: #directions is acting as a library
             for i in range (1, 8):
                 endRow = r + d[0] * i
                 endCol = c + d[1] * i
@@ -101,10 +170,13 @@ class GameState():
                         break
                 else: #Off board
                     break
+        '''
+        The "break' code means it will break that scenario, but jump directly to a new scenario of the 'for' loop
+        '''
 
 
     def getKnightMoves(self, r, c, moves):
-        knightMoves = ((-2, -1),(-2,1), (-1, -2), (-1,2),(1,-2),(1,2),(2,-1),(2,1))
+        knightMoves = ((-2, -1),(-2,1), (-1, -2), (-1,2),(1,-2),(1,2),(2,-1),(2,1)) #Move in Ls
         allyColor = 'w' if self.whiteToMove else 'b'
         for m in knightMoves:
             endRow = r + m[0]
@@ -114,13 +186,14 @@ class GameState():
                 if endPiece[0] != allyColor: #Not an ally piece (empty of enemy piece)
                     moves.append(Move((r,c), (endRow,endCol), self.board))
 
-    def getBishopMoves(self, r, c, moves):
+
+    def getBishopMoves(self, r, c, moves): #Pretty the same as the rook, except for the fact that directions are changed
         directions = ((-1,-1), (-1,1), (1,-1), (1,1)) #4 diagonals
         enemyColor = 'b' if self.whiteToMove else 'w'
         for d in directions:
             for i in range (1, 8): #Bishop can move max of 7 squares
                 endRow = r + d[0] * i
-                endCol = r + d[1] * i
+                endCol = c + d[1] * i
                 if 0 <= endRow < 8 and 0 <= endCol < 8: #is it on the board
                     endPiece = self.board[endRow][endCol]
                     if endPiece == '--': #Empty space valid
