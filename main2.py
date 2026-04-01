@@ -1,7 +1,5 @@
-from tarfile import version
-
 import pygame as p
-import engine
+import engine2
 import settings
 
 
@@ -20,7 +18,7 @@ def main():
     screen = p.display.set_mode((settings.WIDTH, settings.HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color('white'))
-    gs = engine.GameState() # create game state
+    gs = engine2.GameState() # create game state
     validMoves = gs.getValidMove()
     moveMade = False #Glad variable for when a move is made
     loadImages()
@@ -44,7 +42,7 @@ def main():
                     sqSelected = (row, col)
                     playerClicks.append(sqSelected) #Append for both 1st and 2nd clicks
                 if len(playerClicks) == 2: #after 2nd click
-                    move = engine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    move = engine2.Move(playerClicks[0], playerClicks[1], gs.board)
                     if move in validMoves:
                         gs.makeMove(move)
                         moveMade = True
