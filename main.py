@@ -45,12 +45,13 @@ def main():
                     playerClicks.append(sqSelected) #Append for both 1st and 2nd clicks
                 if len(playerClicks) == 2: #after 2nd click
                     move = engine.Move(playerClicks[0], playerClicks[1], gs.board)
-                    if move in validMoves:
-                        gs.makeMove(move)
-                        moveMade = True
-                        sqSelected = () #Reset user clicks
-                        playerClicks = []
-                    else:
+                    for i in range(len(validMoves)):
+                        if move == validMoves[i]:
+                            gs.makeMove(validMoves[i])
+                            moveMade = True
+                            sqSelected = () #Reset user clicks
+                            playerClicks = []
+                    if not moveMade:
                         playerClicks = [sqSelected]
                     '''
                     The reason why the sqSelected, playerClicks are 'tabbed' and another 'else' code block in is because to save the clicks
