@@ -55,7 +55,7 @@ class GameState():
         if move.enPassant:
             self.board[move.startRow][move.endCol] = '--'
         #If pawn promotion change piece
-        if move.pawnPromotion:
+        if move.PawnPromotion:
             promotedPiece = input('Promote to Q, R, B, or N:')
             self.board[move.endRow][move.endCol] = move.pieceMoved[0] + promotedPiece
         '''#Update castling rights
@@ -92,12 +92,14 @@ class GameState():
             if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
                 self.enPassantPossible = ()
             #Give back castle rights if move took them away
-            '''self.castleRightsLog.pop()
+            '''
+            self.castleRightsLog.pop()
             castleRights = self.castleRightsLog[-1]
             self.whiteCastleKingside = castleRights.wks
             self.blackCastleKingside = castleRights.bks
             self.whiteCastleQueenside = castleRights.wqs
-            self.blackCastleQueenside = castleRights.bqs'''
+            self.blackCastleQueenside = castleRights.bqs
+            '''
     def getValidMove(self):
         moves = []
         self.inCheck, self.pins, self.checks = self.checkForPinsandChecks()
@@ -134,6 +136,15 @@ class GameState():
                 self.getKingMoves (kingRow, kingCol, moves)
         else: #Not in check so all moves are fine
             moves = self.getAllPossibleMoves()
+
+        if len(moves) == 0:
+            if self.inCheck:
+                self.checkMate = True
+            else:
+                self.staleMate = True
+        else:
+            self.checkMate = False
+            self.staleMate = False
         return moves
 
     def checkForPinsandChecks(self):
@@ -371,13 +382,16 @@ class Move():
 
 
 
-    def __init__(self, startSq, endSq, board):
+    def __init__(self, startSq, endSq, board, enPassant = False, pawnPromotion = False, castle = False):
         self.startRow = startSq[0]
         self.startCol = startSq[1]
         self.endRow = endSq[0]
         self.endCol = endSq[1]
         self.pieceMoved = board[self.startRow][self.startCol]
         self.pieceCaptured = board[self.endRow][self.endCol]
+        self.enPassant = enPassant
+        self.pawnPromotion = pawnPromotion
+        self.castle = castle
         self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
 
     def __eq__(self, other):
