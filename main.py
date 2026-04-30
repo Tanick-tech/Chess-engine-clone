@@ -3,6 +3,7 @@ from tarfile import version
 import pygame as p
 import engine
 import settings
+import SmartMoveFinder
 
 
 '''
@@ -29,14 +30,17 @@ def main():
     gameOver = False
     sqSelected =() #No squares is selected, keep track of the last click of the user (tuple: (row, col))
     playerClicks = [] #Keep track of the player clicks
+    playerOne = False #If a human is playing white --> True. If the AI is playing --> False
+    playerTwo = False #Same as above but for black
 
     while running:
+        humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
             #Mouse handler
             elif e.type == p.MOUSEBUTTONDOWN:
-                if not gameOver:
+                if not gameOver and humanTurn:
                     location = p.mouse.get_pos() #(x,y) location of the mouse
                     col = location[0]//settings.SQ_SIZE # 0 means the x variable of location
                     row = location[1]//settings.SQ_SIZE # 1 means the y variable of location
@@ -76,6 +80,14 @@ def main():
                     moveMade = False
                     animate = False
                     gameOver = False
+
+        #AI move finder logic
+        if not gameOver and not humanTurn:
+            AIMove = SmartMoveFinder.findRandomMove(validMoves) #Let AI decides the move in the background
+            gs.makeMove(AIMove)
+            moveMade = True
+            animate = True
+
 
         if moveMade:
             if animate == True:
