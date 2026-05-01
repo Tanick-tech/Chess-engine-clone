@@ -1,10 +1,43 @@
 import random
+import settings
 
 
-
-def findRandomMove(validMoves):
+'''
+The goal for each sides:
+For white pieces: get the score as high as possible (positive numbers)
+For black pieces: get the score as low as possible (negative numbers)
+'''
+def findRandomMove(validMoves): #validMoves in this case is just the parameter for this def
     return validMoves[random.randint(0, len(validMoves)-1)]
 
-def findBestMove():
-    pass
+#Find the best move based on material alone (greedy solution)
+def findBestMove(gs, validMoves):
+    turnMultiplier = 1 if gs.whiteToMove else -1
+    maxScore =  -settings.CHECKMATE #Worst point for black (the AI side)
+    bestMove = None
+    for playerMove in validMoves:
+        gs.makeMove(playerMove)
+        if gs.checkMate:
+            score = settings.CHECKMATE
+        elif gs.staleMate:
+            score = settings.STALEMATE
+        else:
+            score = turnMultiplier * scoreMaterial(gs.board)
+        if score > maxScore:
+            maxScore = score
+            bestMove = playerMove
+        gs.undoMove()
+    return bestMove
 
+
+
+#Score the board based on material
+def scoreMaterial(board):
+    score = 0
+    for row in board:
+        for square in row:
+            if square[0] == 'w':
+                score += settings.pieceScore[square[1]]
+            elif square[0] == 'b':
+                score -= settings.pieceScore[square[1]]
+    return score

@@ -107,6 +107,15 @@ class GameState():
 
 
     #Update the castle rights given the move
+    '''
+    Rules for castling:
+    1. Neither the king nor the rook involved has moved before. Even if they return to their original squares, castling is no longer allowed.
+    2. No pieces between the king and rook. The path must be completely clear.
+    3. The king is not currently in check.
+    4. The king cannot move through or land on a square under attack. For example, if an enemy bishop controls one of the squares the king would cross, castling is illegal.
+    5. Only one rook can be used per castling move. You choose either kingside or queenside, not both.
+    If one of these rules are broken then the flag for that castling side (king side and queen side) will be switched to False (else will always be True).
+    '''
     def updateCastleRights(self, move):
         if move.pieceMoved == 'wk':
             self.currentCastlingRight.wks = False
@@ -126,16 +135,38 @@ class GameState():
                     self.currentCastlingRight.bqs = False
                 elif move.startCol == 7: #Right rook
                     self.currentCastlingRight.bks = False
+        rights = {
+                "wqs": (7, 0, "wR", [(7, 1)]),  # White queenside rook at a1, check b1 empty
+                "bqs": (0, 0, "bR", [(0, 1)]),  # Black queenside rook at a8, check b8 empty
+                "wks": (7, 7, "wR", []),  # White kingside rook at h1
+                "bks": (0, 7, "bR", []),  # Black kingside rook at h8
+            }
+        for side, (row, col, rook, blockers) in rights.items():
+            if self.board[row][col] != rook or any(self.board[r][c] != '--' for r, c in blockers):
+                setattr(self.currentCastlingRight, side, False)
+            else:
+                setattr(self.currentCastlingRight, side, True)
+    '''
+    Meaning of the code (starts at the 'rights' attribute):
+    if self.board[7][1] != '--' or self.board[7][0] != 'wR':
+        self.currentCastlingRight.wqs = False
+    else:
+        self.currentCastlingRight.wqs = True
+    if self.board[0][1] != '--' or self.board[0][0] != 'bR':
+        self.currentCastlingRight.bqs = False
+    else:
+        self.currentCastlingRight.bqs = True
+    if self.board[7][7] != 'wR':
+        self.currentCastlingRight.wks = False
+    else:
+        self.currentCastlingRight.wks = True
+    if self.board[0][7] != 'bR':
+        self.currentCastlingRight.bks = False
+    else:
+        self.currentCastlingRight.bks = True
+    '''
 
-    '''
-    Rules for castling:
-    1. Neither the king nor the rook involved has moved before. Even if they return to their original squares, castling is no longer allowed.
-    2. No pieces between the king and rook. The path must be completely clear.
-    3. The king is not currently in check.
-    4. The king cannot move through or land on a square under attack. For example, if an enemy bishop controls one of the squares the king would cross, castling is illegal.
-    5. Only one rook can be used per castling move. You choose either kingside or queenside, not both.
-    If one of these rules are broken then the flag for that castling side (king side and queen side) will be switched to False (else will always be True).
-    '''
+
 
 
 
