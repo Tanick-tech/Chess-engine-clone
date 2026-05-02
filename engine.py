@@ -56,11 +56,11 @@ class GameState():
         #Castle move
         if move.isCastleMove:
             if move.endCol - move.startCol == 2: #Kingside castle move
-                self.board[move.endRow][move.endCol - 1] = self.board[move.endRow][move.endCol + 1] #Moves the rook
-                self.board[move.endRow][move.endCol + 1] = '--' #Erase old rook
+                self.board[move.endRow][5] = self.board[move.endRow][7] #Moves the rook
+                self.board[move.endRow][7] = '--' #Erase old rook
             else: #Queenside castle move
-                self.board[move.endRow][move.endCol+1] = self.board[move.endRow][move.endCol - 2] #Moves the rook
-                self.board[move.endRow][move.endCol - 2] = '--' #Erase old rook
+                self.board[move.endRow][3] = self.board[move.endRow][0] #Moves the rook
+                self.board[move.endRow][0] = '--' #Erase old rook
 
         #Update castling rights - whenever a rook or a king move
         self.castleRightsLog.append(CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks, self.currentCastlingRight.wqs,self.currentCastlingRight.bqs))
@@ -90,18 +90,20 @@ class GameState():
             #Undo castling moves
             if move.isCastleMove:
                 if move.endCol - move.startCol == 2:  # Kingside castle move
-                    self.board[move.endRow][move.endCol + 1] = self.board[move.endRow][move.endCol - 1]  # Moves the rook
-                    self.board[move.endRow][move.endCol - 1] = '--'  # Erase old rook
+                    self.board[move.endRow][7] = self.board[move.endRow][5]  # Moves the rook
+                    self.board[move.endRow][5] = '--'  # Erase old rook
                 else:  # Queenside castle move
-                    self.board[move.endRow][move.endCol-2] = self.board[move.endRow][move.endCol+1]  # Moves the rook
-                    self.board[move.endRow][move.endCol+1] = '--'  # Erase old rook
+                    self.board[move.endRow][0] = self.board[move.endRow][3]  # Moves the rook
+                    self.board[move.endRow][3] = '--'  # Erase old rook
 
             # Undo castling rights
-
             # 1. Save current rights FIRST
             self.castleRightsLog.append(CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks, self.currentCastlingRight.wqs, self.currentCastlingRight.bqs))
             # 2. THEN update rights
             self.updateCastleRights(move)
+
+            self.checkMate = False
+            self.stateMate = False
 
 
 

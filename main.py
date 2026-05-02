@@ -30,7 +30,7 @@ def main():
     gameOver = False
     sqSelected =() #No squares is selected, keep track of the last click of the user (tuple: (row, col))
     playerClicks = [] #Keep track of the player clicks
-    playerOne = True #If a human is playing white --> True. If the AI is playing --> False
+    playerOne = False #If a human is playing white --> True. If the AI is playing --> False
     playerTwo = False #Same as above but for black
 
     while running:
@@ -72,6 +72,7 @@ def main():
                     gs.undoMove()
                     moveMade = True
                     animate = False
+                    gameOver = False
                 if e.key == p.K_r: #Reset the board when 'r' is pressed
                     gs = engine.GameState()
                     validMoves = gs.getValidMove()
@@ -83,7 +84,7 @@ def main():
 
         #AI move finder logic
         if not gameOver and not humanTurn:
-            AIMove = SmartMoveFinder.findBestMove(gs, validMoves)
+            AIMove = SmartMoveFinder.findBestMoveMinMax(gs, validMoves)
             if AIMove == None:
                 AIMove = SmartMoveFinder.findRandomMove(validMoves) #Let AI decides the move in the background.
             # The validMoves in this place is actually a variable (validMoves = gs.getValidMoves)
