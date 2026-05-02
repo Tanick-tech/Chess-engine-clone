@@ -13,21 +13,29 @@ def findRandomMove(validMoves): #validMoves in this case is just the parameter f
 #Find the best move based on material alone (greedy solution)
 def findBestMove(gs, validMoves):
     turnMultiplier = 1 if gs.whiteToMove else -1
-    maxScore =  -settings.CHECKMATE #Worst point for black (the AI side)
-    bestMove = None
+    opponentMinMaxScore =  settings.CHECKMATE #Minimize opponents' maximum score (which is the white piece)
+    bestPlayerMove = None
     for playerMove in validMoves:
         gs.makeMove(playerMove)
-        if gs.checkMate:
-            score = settings.CHECKMATE
-        elif gs.staleMate:
-            score = settings.STALEMATE
-        else:
-            score = turnMultiplier * scoreMaterial(gs.board)
-        if score > maxScore:
-            maxScore = score
-            bestMove = playerMove
+        opponentsMoves = gs.getValidMove()
+        random.shuffle(validMoves)
+        opponentMaxScore = -settings.CHECKMATE
+        for opponentsMove in opponentsMoves: #opponentsMove: stopping condition
+            gs.makeMove(opponentsMove)
+            if gs.checkMate:
+                score = -turnMultiplier * settings.CHECKMATE
+            elif gs.staleMate:
+                score = settings.STALEMATE
+            else:
+                score = -turnMultiplier * scoreMaterial(gs.board)
+            if score > opponentMaxScore:
+                opponentMaxScore = score
+            gs.undoMove()
+        if opponentMaxScore < opponentMinMaxScore:
+            opponentMinMaxScore = opponentMaxScore
+            bestPlayerMove = playerMove
         gs.undoMove()
-    return bestMove
+    return bestPlayerMove
 
 
 
