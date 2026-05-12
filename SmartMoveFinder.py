@@ -44,13 +44,15 @@ def findBestMove(gs, validMoves): #Helper method to make first recursive call (c
     return bestPlayerMove #Helper method to make
 
 
-def findBestMove1(gs, validMoves): #Helper def
-    global nextMove
+def findBestMove1(gs, validMoves, returnQueue): #Helper def
+    global nextMove, counter
     nextMove = None
+    random.shuffle(validMoves)
+    counter = 0
     # findMoveMinMax(gs, validMoves, settings.DEPTH, gs.whiteToMove)
     # findMoveNegaMax(gs, validMoves, settings.DEPTH, 1 if gs.whiteToMove else -1)
     findMoveNegaMaxAlphaBeta(gs, validMoves, settings.DEPTH - 1, -settings.CHECKMATE, settings.CHECKMATE, 1 if gs.whiteToMove else -1)
-    return nextMove
+    returnQueue.put(nextMove)
 
 def findMoveMinMax(gs, validMoves, depth, whiteToMove): #The true minmax algorithm (with recursion happening)
     global nextMove
@@ -133,12 +135,22 @@ def scoreBoard(gs):
             return settings.CHECKMATE #White wins
     elif gs.staleMate:
         return settings.STALEMATE
-    for row in gs.board:
-        for square in row:
-            if square[0] == 'w':
-                score += settings.pieceScore[square[1]]
-            elif square[0] == 'b':
-                score -= settings.pieceScore[square[1]]
+    for row in range(len(gs.board)):
+        for col in range(len(gs.board[row])):
+            square = gs.board[row][col]
+            if square != '--':
+                #Score it positionally
+                piecePositionScore = 0
+                if square[1] != 'K': #No position table for king
+                    if square[1] == 'p':
+                        piecePositionScore = settings.piecePositionScores[square][row][col] #For pawns
+                    else:
+                        piecePositionScore = settings.piecePositionScores[square[1]][row][col] #For the other pieces (except the king)
+
+                if square[0] == 'w':
+                    score += settings.pieceScore[square[1]] + piecePositionScore*.1
+                elif square[0] == 'b':
+                    score -= settings.pieceScore[square[1]] +piecePositionScore*.1
     return score
 
 #Score the board based on material
@@ -193,8 +205,4 @@ What is Alpha Beta pruning?
 Alpha is the variable stands for the best score for white, whereas beta is the variable stands for the best score for black.
 For white, it alpha >= beta --> no need to explore further. (The code stops)
 For black, it is the same but everything is change (-beta <= - alpha) since black needs to be as negative as possible. (since we implement the NegaMax).
-
-6th: 
-
-
 '''

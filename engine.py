@@ -3,9 +3,9 @@ class GameState():
         #board is a 8x8 2d list, each element of the list has 2 characters (1st: color; 2nd: type)
         #'--' represents an empty space with no piece
         self.board = [
-            ['bR','bN','bB','bQ','bK','bB','bN','bR'],
-            ['bp','bp','bp','bp','bp','bp','bp','bp'],
-            ['--','--','--','--','--','--','--','--'],
+            ['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
+            ['bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp', 'bp'],
+            ['--', '--', '--', '--', '--', '--', '--', '--'],
             ['--', '--', '--', '--', '--', '--', '--', '--'],
             ['--', '--', '--', '--', '--', '--', '--', '--'],
             ['--', '--', '--', '--', '--', '--', '--', '--'],
@@ -21,11 +21,11 @@ class GameState():
         self.checkMate = False
         self.staleMate = False
         self.enpassantPossible = () #Coordinates for the square where an enpassant capture is possible
+        self.enpassantPossibleLog = [self.enpassantPossible] #Building a list for undo purposes (creating a new GameState for enpassant when every move is made so when we can easily undo the move)
         self.currentCastlingRight = CastleRights(True, True, True, True)
         # Creating a list of self.currentCastlingRight (later for undo purposes), and each turns will be recorded as 1 piece of data in order to recognise the changes
         self.castleRightsLog = [CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks, self.currentCastlingRight.wqs, self.currentCastlingRight.bqs)]
-
-
+        
 
 #This def will not work for castling, pawn promotion and en passant
     def makeMove(self, move):
@@ -52,6 +52,7 @@ class GameState():
             self.enpassantPossible = ((move.startRow + move.endRow)//2, move.startCol)
         else:
             self.enpassantPossible = ()
+        self.enpassantPossibleLog.append(self.enpassantPossible)
 
         #Castle move
         if move.isCastleMove:
@@ -82,10 +83,9 @@ class GameState():
             if move.isEnpassantMove:
                 self.board[move.endRow][move.endCol] = '--' #Landing square blank
                 self.board[move.startRow][move.endCol] = move.pieceCaptured
-                self.enpassantPossible = (move.endRow, move.endCol)
-            #Undo a 2 square pawn advance
-            if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
-                self.enpassantPossible = ()
+            self.enpassantPossibleLog.pop()
+            self.enpassantPossible  =self.enpassantPossibleLog[-1]
+
 
             #Undo castling moves
             if move.isCastleMove:
@@ -285,6 +285,7 @@ class GameState():
                     moves.append(Move((r,c),(r+1,c+1), self.board, isEnpassantMove= True))
 
 
+
     def getRookMoves(self, r, c, moves):
         directions = ((-1,0), (1,0), (0,-1), (0,1)) #Up, left, down, right
         '''
@@ -403,7 +404,7 @@ class Move():
     That 4 codes describes the coordinates in the real chess board, however now they are now crypted with the numbers.
     '''
 
-    def __init__(self, startSq, endSq, board, isEnpassantMove = False, isCastleMove = False):
+    def __init__(self, startSq, endSq, board, isEnpassantMove = False, isCastleMove = False, pawnLeap = False):
         self.startRow = startSq[0]
         self.startCol = startSq[1]
         self.endRow = endSq[0]
@@ -411,6 +412,7 @@ class Move():
         self.pieceMoved = board[self.startRow][self.startCol]
         self.pieceCaptured = board[self.endRow][self.endCol]
         self.isPawnPromotion = ((self.pieceMoved == 'wp' and self.endRow == 0) or (self.pieceMoved == 'bp' and self.endRow == 7))
+        self.isCapture = self.pieceCaptured != '--'
         '''
         Why add pawn promotion in here but not in the def getPawnMoves?
         1st: In the getPawnmoves we need to deal with 6 different types of pawns (pawns do 1 square advance, pawn to 2 square advance, capturing (x2 due to 2 two colours: white and black))
@@ -422,6 +424,8 @@ class Move():
         self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
         #Castle move
         self.isCastleMove = isCastleMove
+        #Pawn leap move
+        self.pawnLeap = pawnLeap
 
 
     def __eq__(self, other):
@@ -435,6 +439,34 @@ class Move():
 
     def getRankFile(self, r, c):
         return self.colsToFiles[c] + self.rowsToRanks[r]
+
+    #Overriding the str() function
+    def __str__(self):
+        #Castle move
+        if self.isCastleMove:
+            return "O-O" if self.endCol == 6 else "O-O-O"
+            "O-O" #King side castle
+            "O-O-O" #Queen side castle
+
+        endSquare = self.getRankFile(self.endRow, self.endCol)
+        #Pawn moves
+        if self.pieceMoved[1] == 'p':
+            if self.isCapture:
+                return self.colsToFiles[self.startCol] + 'X' + endSquare
+            else:
+                return endSquare
+        #Pawn promotion
+        if self.isPawnPromotion:
+            return self.getChessNotation() + "--> Q"
+
+
+        #Also adding + for a check move, and # for a checkmate move
+
+        #Piece moves
+        moveString = self.pieceMoved[1]
+        if self.isCapture:
+            moveString += 'x'
+        return moveString + endSquare
 
 class CastleRights():
     def __init__(self, wks, bks, wqs, bqs):
