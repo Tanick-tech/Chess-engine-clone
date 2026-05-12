@@ -424,8 +424,6 @@ class Move():
         self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
         #Castle move
         self.isCastleMove = isCastleMove
-        #Pawn leap move
-        self.pawnLeap = pawnLeap
 
 
     def __eq__(self, other):
